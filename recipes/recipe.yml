@@ -90,6 +90,13 @@ modules:
         - zsh-autosuggestions
         - zsh-syntax-highlighting
         - vicinae
+        - sddm
+        - sddm-themes
+
+  - type: systemd
+    system:
+      enabled:
+        - sddm.service
 
   - type: brew
     nofile-limits: true

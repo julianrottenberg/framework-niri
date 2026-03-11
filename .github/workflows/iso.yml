@@ -1,56 +1,69 @@
-name: Generate ISO
+name: Build ISO
 on:
-  workflow_dispatch: # Manual trigger only
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/iso.yml'
-      - 'recipes/recipe.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (default: latest)'
+        required: false
+        default: 'latest'
 
 jobs:
-  generate-iso:
-    name: Generate ISO
+  build-iso:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: read
+    container:
+      image: fedora:latest
+      options: --privileged
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install BlueBuild CLI
+      - name: Install dependencies
         run: |
-          podman run --rm ghcr.io/blue-build/cli:latest-installer | bash
+          dnf install -y \
+            curl \
+            podman \
+            skopeo \
+            xorriso \
+            grub2-tools \
+            grub2-tools-extra \
+            isomd5sum
 
-      - name: Generate ISO
-        run: |
-          bluebuild generate-iso \
-            --iso-name framework-niri.iso \
-            image ghcr.io/julianrottenberg/framework-niri:latest
+      - name: Build ISO
+        uses: JasonN3/build-container-installer@v1.4.0
+        with:
+          arch: x86_64
+          image_name: framework-niri
+          image_repo: ghcr.io/julianrottenberg
+          image_tag: ${{ github.event.inputs.version || 'latest' }}
+          version: 43
+          variant: base
+          iso_name: framework-niri-${{ github.event.inputs.version || 'latest' }}.iso
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
           name: framework-niri-iso
-          path: framework-niri.iso
-          retention-days: 30
+          path: |
+            *.iso
+            *-CHECKSUM
+          retention-days: 7
 
       - name: Create Release
         if: github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v1
         with:
-          files: framework-niri.iso
+          files: |
+            *.iso
+            *-CHECKSUM
           tag_name: iso-${{ github.run_number }}
-          name: Framework Niri ISO ${{ github.run_number }}
+          name: Framework Niri ISO ${{ github.event.inputs.version || 'latest' }}
           body: |
-            Bootable ISO for Framework Niri
+            Bootable ISO for Framework Niri (${{ github.event.inputs.version || 'latest' }})
             
-            Flash this ISO to a USB drive using Fedora Media Writer or balenaEtcher.
-            
-            Installation:
-            1. Boot from USB
-            2. Follow the installer instructions
-            3. Rebase to ghcr.io/julianrottenberg/framework-niri:latest after installation
+            ## Installation
+            1. Flash ISO to USB using Fedora Media Writer or balenaEtcher
+            2. Boot from USB
+            3. Follow Anaconda installer
+            4. System will be installed with Framework Niri image
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
