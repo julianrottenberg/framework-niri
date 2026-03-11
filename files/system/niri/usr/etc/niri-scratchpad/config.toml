@@ -1,0 +1,24 @@
+# Toggle key (you'll bind this in niri)
+toggle_key = "Mod+Minus"
+
+# Scratchpad windows
+[[windows]]
+name = "music"
+app_id = "com.github.th_ch.youtube_music"
+command = "youtube-music"
+width = 80
+height = 70
+
+[[windows]]
+name = "bt"
+app_id = "blueman-manager"
+command = "blueman-manager"
+width = 60
+height = 50
+
+[[windows]]
+name = "wifi"
+app_id = "nm-connection-editor"
+command = "nm-connection-editor"
+width = 60
+height = 50

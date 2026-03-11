@@ -1,0 +1,32 @@
+modules:
+  - type: rpm-ostree
+    repos:
+      - https://copr.fedorainfracloud.org/coprs/quadratech188/vicinae/repo/fedora-%OS_VERSION%/quadratech188-vicinae-fedora-%OS_VERSION%.repo
+    install:
+      - vicinae
+
+  - type: files
+    files:
+      - source: system/niri
+        destination: /
+      - source: system/waybar
+        destination: /
+      - source: system/foot
+        destination: /
+      - source: system/wlogout
+        destination: /
+      - source: system/mako
+        destination: /
+      - source: system/clipcat
+        destination: /
+      - source: system/wallpapers
+        destination: /
+
+  - type: script
+    scripts:
+      - install-niri-scratchpad.sh
+
+  - type: systemd
+    user:
+      enabled:
+        - vicinae.service

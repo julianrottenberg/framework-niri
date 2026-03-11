@@ -1,0 +1,157 @@
+@import "macchiato.css";
+
+* {
+    font-family: "JetBrainsMono Nerd Font", "Font Awesome 6 Free", sans-serif;
+    font-size: 13px;
+    min-height: 0;
+}
+
+window#waybar {
+    background-color: transparent;
+    color: @text;
+    transition-property: background-color;
+    transition-duration: 0.5s;
+}
+
+window#waybar.hidden {
+    opacity: 0.2;
+}
+
+.modules-left,
+.modules-center,
+.modules-right {
+    background-color: shade(@base, 0.9);
+    border: 2px solid alpha(@crust, 0.3);
+    border-radius: 12px;
+    padding: 4px 8px;
+    margin: 8px 4px;
+}
+
+.modules-left {
+    margin-left: 8px;
+}
+
+.modules-right {
+    margin-right: 8px;
+}
+
+#workspaces button {
+    padding: 0 10px;
+    color: @overlay0;
+    background-color: transparent;
+    border: none;
+    border-radius: 8px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+}
+
+#workspaces button:hover {
+    background-color: alpha(@overlay0, 0.3);
+    color: @text;
+}
+
+#workspaces button.active {
+    background-color: @mauve;
+    color: @base;
+    font-weight: bold;
+}
+
+#workspaces button.urgent {
+    background-color: @red;
+    color: @base;
+}
+
+#clock {
+    padding: 0 12px;
+    color: @text;
+    font-weight: bold;
+}
+
+#battery {
+    padding: 0 12px;
+    color: @green;
+}
+
+#battery.charging {
+    color: @green;
+}
+
+#battery.warning:not(.charging) {
+    color: @yellow;
+}
+
+#battery.critical:not(.charging) {
+    color: @red;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    to {
+        color: @text;
+    }
+}
+
+#network {
+    padding: 0 12px;
+    color: @blue;
+}
+
+#network.disconnected {
+    color: @overlay0;
+}
+
+#pulseaudio {
+    padding: 0 12px;
+    color: @sapphire;
+}
+
+#pulseaudio.muted {
+    color: @overlay0;
+}
+
+#backlight {
+    padding: 0 12px;
+    color: @yellow;
+}
+
+#tray {
+    padding: 0 12px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+}
+
+#custom-keyboard {
+    padding: 0 12px;
+    color: @mauve;
+}
+
+#custom-notification {
+    padding: 0 12px;
+    color: @peach;
+}
+
+#idle_inhibitor {
+    padding: 0 12px;
+    color: @overlay0;
+}
+
+#idle_inhibitor.activated {
+    color: @red;
+}
+
+tooltip {
+    background-color: @base;
+    border: 2px solid alpha(@crust, 0.3);
+    border-radius: 8px;
+}
+
+tooltip label {
+    color: @text;
+    padding: 4px;
+}

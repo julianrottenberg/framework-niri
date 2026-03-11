@@ -1,0 +1,2 @@
+# Set ZDOTDIR to look in /etc/skel for default configs
+export ZDOTDIR="/etc/skel"

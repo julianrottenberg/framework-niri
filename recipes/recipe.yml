@@ -1,0 +1,13 @@
+name: framework-niri
+description: Custom Fedora Atomic with Niri WM optimized for Framework 13 AMD
+base-image: quay.io/fedora-ostree-desktops/base-atomic
+image-version: 41
+
+modules:
+  - from-file: common/base-modules.yml
+  - from-file: common/framework-modules.yml
+  - from-file: common/niri-modules.yml
+  - from-file: common/browser-modules.yml
+  - from-file: common/zsh-modules.yml
+  - from-file: common/ujust-modules.yml
+  - from-file: common/final-modules.yml

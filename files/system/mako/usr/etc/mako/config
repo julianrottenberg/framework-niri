@@ -1,0 +1,44 @@
+# Mako notification daemon configuration - Catppuccin Macchiato theme
+
+# Global settings
+font=Inter 10
+background-color=#24273aD9
+text-color=#cad3f5
+border-color=#5b6078D9
+border-size=2
+border-radius=12
+padding=15
+margin=10
+width=350
+height=200
+icon-path=/usr/share/icons/hicolor
+max-icon-size=48
+markup=1
+actions=1
+history=1
+layer=overlay
+anchor=top-right
+
+# Auto-dismiss
+default-timeout=5000
+ignore-timeout=0
+
+# Progress bar styling
+progress-color=#8aadf4D9
+
+# Urgency-based styling
+[urgency=low]
+background-color=#1e2030D9
+border-color=#6e738dD9
+default-timeout=3000
+
+[urgency=normal]
+background-color=#24273aD9
+border-color=#5b6078D9
+default-timeout=5000
+
+[urgency=critical]
+background-color=#24273aD9
+border-color=#ed8796D9
+text-color=#eed49f
+default-timeout=8000
