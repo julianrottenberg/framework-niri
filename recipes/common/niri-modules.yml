@@ -24,6 +24,7 @@ modules:
 
   - type: script
     scripts:
+      - install-clipcat.sh
       - install-niri-scratchpad.sh
 
   - type: systemd

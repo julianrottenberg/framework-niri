@@ -14,9 +14,6 @@ modules:
       - xdg-desktop-portal-gtk
       - xwayland-satellite
       - xorg-x11-server-Xwayland
-      - clipcat
-      - clipcatctl
-      - clipcat-menu
       - brightnessctl
       - pamixer
       - playerctl
@@ -29,13 +26,13 @@ modules:
       - bluez
       - bluez-tools
       - polkit
-      - polkit-gnome
+      - polkit-gnome-authentication-agent-1
       - network-manager-applet
       - NetworkManager-openvpn
       - NetworkManager-openconnect
       - fontawesome-fonts
       - jetbrains-mono-fonts
-      - inter-fonts
+      - google-inter-fonts
       - papirus-icon-theme
       - breeze-icon-theme
       - nemo
