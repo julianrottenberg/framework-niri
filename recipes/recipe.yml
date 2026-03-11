@@ -90,7 +90,6 @@ modules:
         - zsh-autosuggestions
         - zsh-syntax-highlighting
         - vicinae
-        - homebrew
 
   - type: brew
     nofile-limits: true
