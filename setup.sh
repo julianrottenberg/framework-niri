@@ -33,11 +33,23 @@ if ! rpm -q rpm-ostree &>/dev/null; then
     exit 1
 fi
 
-# Function to layer packages
+# Step 0: System Update
+system_update() {
+    log_info "Step 0: Updating system..."
+    sudo rpm-ostree upgrade
+    log_info "System updated! Please reboot and run this script again."
+    read -p "Reboot now? [y/N]: " reboot
+    if [[ $reboot =~ ^[Yy]$ ]]; then
+        sudo systemctl reboot
+    fi
+}
+
+# Step 1: Layer Packages
 layer_packages() {
-    log_info "Layering packages via rpm-ostree..."
+    log_info "Step 1: Layering packages via rpm-ostree..."
     
     sudo rpm-ostree install \
+        niri \
         waybar \
         wlogout \
         mako \
@@ -81,130 +93,34 @@ layer_packages() {
         zsh \
         zsh-autosuggestions \
         zsh-syntax-highlighting \
-        --idempotent || true
+        vim \
+        --allow-inactive || true
     
-    log_info "Packages layered. You'll need to reboot to apply changes."
+    log_info "Packages layered!"
 }
 
-# Function to setup COPR repos and install from COPR
-setup_copr() {
-    log_info "Setting up COPR repositories..."
+# Step 2: Setup Terra Repo and Install Vicinae
+setup_vicinae() {
+    log_info "Step 2: Setting up Terra repository and installing Vicinae..."
     
-    # Add vicinae COPR
-    sudo curl -Lo /etc/yum.repos.d/vicinae.repo \
-        https://copr.fedorainfracloud.org/coprs/quadratech188/vicinae/repo/fedora-$(rpm -E %fedora)/quadratech188-vicinae-fedora-$(rpm -E %fedora).repo
+    # Add Terra repository (recommended method for Vicinae on Fedora Atomic)
+    curl -fsSL https://github.com/terrapkg/subatomic-repos/raw/main/terra.repo | sudo tee /etc/yum.repos.d/terra.repo
     
-    # Layer vicinae
-    sudo rpm-ostree install vicinae --idempotent || true
+    # Install terra-release and vicinae
+    sudo rpm-ostree install terra-release vicinae || true
+    
+    log_info "Vicinae setup complete!"
 }
 
-# Function to install Homebrew
-install_homebrew() {
-    log_info "Installing Homebrew..."
-    
-    if command -v brew &>/dev/null; then
-        log_warn "Homebrew already installed"
-        return
-    fi
-    
-    # Install Homebrew
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    
-    # Add to PATH for current session
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-    
-    # Add to shell profile
-    if ! grep -q "linuxbrew" ~/.bashrc 2>/dev/null; then
-        echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
-    fi
-    
-    log_info "Homebrew installed!"
-}
-
-# Function to install brew packages
-install_brew_packages() {
-    log_info "Installing Homebrew packages..."
-    
-    # Ensure brew is in PATH
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv 2>/dev/null || true)"
-    
-    # Install packages
-    brew install eza || log_warn "eza may already be installed"
-    
-    log_info "Homebrew packages installed!"
-}
-
-# Function to install Helium browser
-install_helium() {
-    log_info "Installing Helium browser..."
-    
-    HELIUM_VERSION="0.9.4.1"
-    INSTALL_DIR="$HOME/.local/opt/helium-browser"
-    
-    if [ -d "$INSTALL_DIR" ]; then
-        log_warn "Helium already installed"
-        return
-    fi
-    
-    # Download
-    mkdir -p ~/.local/opt
-    cd ~/.local/opt
-    wget -q "https://github.com/imputnet/helium-linux/releases/download/${HELIUM_VERSION}/helium-${HELIUM_VERSION}-x86_64_linux.tar.xz"
-    
-    # Extract
-    mkdir -p "$INSTALL_DIR"
-    tar -xf "helium-${HELIUM_VERSION}-x86_64_linux.tar.xz" -C "$INSTALL_DIR" --strip-components=1
-    rm "helium-${HELIUM_VERSION}-x86_64_linux.tar.xz"
-    
-    # Create symlink
-    mkdir -p ~/.local/bin
-    ln -sf "$INSTALL_DIR/helium-wrapper" ~/.local/bin/helium-browser
-    
-    # Desktop entry
-    mkdir -p ~/.local/share/applications
-    cp "$INSTALL_DIR/helium.desktop" ~/.local/share/applications/
-    sed -i "s|Exec=.*|Exec=$HOME/.local/bin/helium-browser %U|" ~/.local/share/applications/helium.desktop
-    
-    # Icons
-    mkdir -p ~/.local/share/icons/hicolor/256x256/apps
-    cp "$INSTALL_DIR/product_logo_256.png" ~/.local/share/icons/hicolor/256x256/apps/helium-browser.png
-    
-    log_info "Helium browser installed!"
-}
-
-# Function to install niri-scratchpad
-install_niri_scratchpad() {
-    log_info "Installing niri-scratchpad..."
-    
-    if command -v niri-scratchpad &>/dev/null; then
-        log_warn "niri-scratchpad already installed"
-        return
-    fi
-    
-    mkdir -p ~/.local/bin
-    wget -q -O ~/.local/bin/niri-scratchpad \
-        "https://github.com/argosnothing/niri-scratchpad-rs/releases/download/v2.1/niri-scratchpad-x86_64"
-    chmod +x ~/.local/bin/niri-scratchpad
-    
-    log_info "niri-scratchpad installed!"
-}
-
-# Function to setup configs
+# Step 3: Download Configs
 setup_configs() {
-    log_info "Setting up configurations..."
+    log_info "Step 3: Setting up configurations..."
     
     # Create directories
-    mkdir -p ~/.config/niri
-    mkdir -p ~/.config/waybar
-    mkdir -p ~/.config/foot
-    mkdir -p ~/.config/wlogout
-    mkdir -p ~/.config/mako
-    mkdir -p ~/.config/clipcat
+    mkdir -p ~/.config/{niri,waybar,foot,wlogout,mako,clipcat}
     
-    # Download configs from your repo
+    # Download configs from repo
     BASE_URL="https://raw.githubusercontent.com/julianrottenberg/framework-niri/main/files/system"
-    
-    log_info "Downloading configuration files..."
     
     # Niri config
     curl -Lo ~/.config/niri/config.kdl "${BASE_URL}/etc/niri/config.kdl"
@@ -224,29 +140,123 @@ setup_configs() {
     # Mako config
     curl -Lo ~/.config/mako/config "${BASE_URL}/etc/mako/config"
     
-    # Wallpaper
-    mkdir -p ~/Pictures/Wallpapers
-    curl -Lo ~/Pictures/Wallpapers/framework-niri.png "${BASE_URL}/usr/share/backgrounds/custom/default.png"
-    
     log_info "Configurations downloaded!"
 }
 
-# Function to setup zsh
-setup_zsh() {
-    log_info "Setting up Zsh with Prezto..."
+# Step 4: Download Wallpaper
+setup_wallpaper() {
+    log_info "Step 4: Setting up wallpaper..."
     
-    # Install Prezto if not exists
-    if [ ! -d ~/.zprezto ]; then
-        git clone --recursive https://github.com/sorin-ionescu/prezto.git ~/.zprezto
+    mkdir -p ~/Pictures/Wallpapers
+    curl -Lo ~/Pictures/Wallpapers/framework-niri.png \
+        "https://raw.githubusercontent.com/julianrottenberg/framework-niri/main/files/system/usr/share/backgrounds/custom/default.png"
+    
+    # Update niri config to use correct wallpaper path
+    sed -i "s|/usr/share/backgrounds/custom/default.png|$HOME/Pictures/Wallpapers/framework-niri.png|g" ~/.config/niri/config.kdl
+    
+    log_info "Wallpaper configured!"
+}
+
+# Step 5: Install Homebrew and Fonts
+install_homebrew() {
+    log_info "Step 5: Installing Homebrew and fonts..."
+    
+    if command -v brew &>/dev/null; then
+        log_warn "Homebrew already installed"
+    else
+        # Install Homebrew
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
     
-    # Create .zshrc if not exists
-    if [ ! -f ~/.zshrc ]; then
-        cat > ~/.zshrc << 'EOF'
-# Source Prezto
-if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
-  source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
-fi
+    # Add to PATH for current session
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    
+    # Add to .zshrc (not .bashrc)
+    if ! grep -q "linuxbrew" ~/.zshrc 2>/dev/null; then
+        echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.zshrc
+    fi
+    
+    # Install fonts via Homebrew
+    brew install font-fira-code
+    brew install --cask font-jetbrains-mono-nerd-font
+    brew install --cask font-fontawesome
+    
+    log_info "Homebrew and fonts installed!"
+}
+
+# Step 6: Install Homebrew Packages (eza)
+install_brew_packages() {
+    log_info "Step 6: Installing Homebrew packages..."
+    
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    brew install eza
+    
+    log_info "Homebrew packages installed!"
+}
+
+# Step 7: Install Helium Browser via COPR
+install_helium() {
+    log_info "Step 7: Installing Helium browser..."
+    
+    # Add COPR repository
+    sudo curl -o /etc/yum.repos.d/helium.repo \
+        https://copr.fedorainfracloud.org/coprs/v8v88v8v88/helium/repo/fedora-43/v8v88v8v88-helium-fedora-43.repo
+    
+    # Update and install
+    sudo rpm-ostree update
+    sudo rpm-ostree install helium
+    
+    log_info "Helium browser installed!"
+}
+
+# Step 8: Build and Install niri-scratchpad
+install_niri_scratchpad() {
+    log_info "Step 8: Building and installing niri-scratchpad..."
+    
+    # Install build dependencies
+    sudo rpm-ostree install rustc cargo
+    
+    # Build from source
+    cd /tmp
+    wget -q https://github.com/argosnothing/niri-scratchpad-rs/archive/refs/tags/2.1.zip
+    unzip -q 2.1.zip
+    cd niri-scratchpad-rs-2.1
+    cargo build --release
+    
+    # Install to local bin
+    mkdir -p ~/.local/bin
+    mv target/release/niri-scratchpad ~/.local/bin/
+    chmod +x ~/.local/bin/niri-scratchpad
+    
+    # Cleanup
+    cd ~
+    rm -rf /tmp/niri-scratchpad-rs-2.1 /tmp/2.1.zip
+    
+    log_info "niri-scratchpad installed!"
+}
+
+# Step 9: Setup Zsh with Prezto
+setup_zsh() {
+    log_info "Step 9: Setting up Zsh with Prezto..."
+    
+    # Install Prezto
+    if [ ! -d ~/.zprezto ]; then
+        git clone --recursive https://github.com/sorin-ionescu/prezto.git "${ZDOTDIR:-$HOME}/.zprezto"
+        
+        setopt EXTENDED_GLOB
+        for rcfile in "${ZDOTDIR:-$HOME}"/.zprezto/runcoms/^README.md(.N); do
+            ln -sf "$rcfile" "${ZDOTDIR:-$HOME}/.${rcfile:t}"
+        done
+    fi
+    
+    # Set zsh as default shell
+    if [ "$SHELL" != "$(which zsh)" ]; then
+        chsh -s "$(which zsh)"
+    fi
+    
+    # Add custom settings to .zshrc (append to existing)
+    if ! grep -q "Modern CLI aliases" ~/.zshrc 2>/dev/null; then
+        cat >> ~/.zshrc << 'EOF'
 
 # Modern CLI aliases
 alias cat='bat --paging=never'
@@ -268,33 +278,29 @@ fi
 EOF
     fi
     
-    # Set zsh as default shell
-    if [ "$SHELL" != "/usr/bin/zsh" ]; then
-        log_info "Setting zsh as default shell..."
-        chsh -s /usr/bin/zsh
-    fi
+    # Source the updated config
+    source ~/.zshrc
     
     log_info "Zsh configured!"
 }
 
-# Function to setup Flatpaks
+# Step 10: Setup Flatpaks
 setup_flatpaks() {
-    log_info "Setting up Flatpaks..."
+    log_info "Step 10: Setting up Flatpaks..."
     
-    # Add flathub if not present
+    # Add Flathub
     flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
     
-    # Install flatpaks
-    flatpak install -y --user \
-        com.github.tchx84.Flatseal \
-        app.zen_browser.zen || log_warn "Some flatpaks may already be installed"
+    # Install Flatpaks
+    flatpak install -y --user flathub io.github.kolunmi.Bazaar
+    flatpak install -y --user flathub app.zen_browser.zen
     
     log_info "Flatpaks configured!"
 }
 
-# Function to setup services
+# Step 11: Enable Services
 setup_services() {
-    log_info "Enabling services..."
+    log_info "Step 11: Enabling services..."
     
     # Enable user services
     systemctl --user enable vicinae.service 2>/dev/null || true
@@ -305,9 +311,9 @@ setup_services() {
     log_info "Services configured!"
 }
 
-# Function to create ujust commands
+# Step 12: Create ujust Commands
 setup_ujust() {
-    log_info "Setting up custom ujust commands..."
+    log_info "Step 12: Setting up custom ujust commands..."
     
     mkdir -p ~/.config/just
     
@@ -332,31 +338,32 @@ EOF
     log_info "Custom ujust commands created!"
 }
 
-# Main menu
-show_menu() {
-    echo ""
-    echo "What would you like to do?"
-    echo ""
-    echo "1) Run full setup (recommended for fresh installs)"
-    echo "2) Layer packages only (requires reboot)"
-    echo "3) Setup configs only"
-    echo "4) Install Homebrew and packages"
-    echo "5) Install Helium browser"
-    echo "6) Setup Zsh"
-    echo "7) Setup Flatpaks"
-    echo "8) Exit"
-    echo ""
-}
-
+# Run full setup
 run_full_setup() {
     log_info "Running full setup..."
     
+    # Steps that require reboot between them
+    system_update
     layer_packages
-    setup_copr
+    setup_vicinae
+    install_helium
+    
+    log_warn "You need to reboot to apply rpm-ostree changes!"
+    log_warn "After reboot, run this script again to continue with steps 3-12."
+    read -p "Reboot now? [y/N]: " reboot
+    if [[ $reboot =~ ^[Yy]$ ]]; then
+        sudo systemctl reboot
+    fi
+}
+
+# Run post-reboot setup (steps that don't need reboot)
+run_post_reboot_setup() {
+    log_info "Running post-reboot setup..."
+    
     setup_configs
+    setup_wallpaper
     install_homebrew
     install_brew_packages
-    install_helium
     install_niri_scratchpad
     setup_zsh
     setup_flatpaks
@@ -368,29 +375,77 @@ run_full_setup() {
     log_info "Setup complete!"
     log_info "=========================================="
     echo ""
-    log_warn "IMPORTANT: You need to reboot to apply rpm-ostree changes!"
-    echo ""
-    echo "After reboot:"
-    echo "1. Login with your user"
-    echo "2. Run: ujust install-vicinae-ext"
+    echo "Next steps:"
+    echo "1. Logout and select 'Niri' from the login screen"
+    echo "2. Run: ujust install-vicinae-ext (to install Vicinae extensions)"
     echo "3. Enjoy your Framework Niri setup!"
+    echo ""
+}
+
+# Main menu
+show_menu() {
+    echo ""
+    echo "What would you like to do?"
+    echo ""
+    echo "1) Run full setup (steps 0-2, requires reboot)"
+    echo "2) Continue setup after reboot (steps 3-12)"
+    echo "3) Individual steps..."
+    echo "4) Exit"
+    echo ""
+}
+
+# Individual steps menu
+show_steps_menu() {
+    echo ""
+    echo "Select step:"
+    echo ""
+    echo "0) System update"
+    echo "1) Layer packages (requires reboot)"
+    echo "2) Setup Vicinae (requires reboot)"
+    echo "3) Download configs"
+    echo "4) Setup wallpaper"
+    echo "5) Install Homebrew and fonts"
+    echo "6) Install Homebrew packages (eza)"
+    echo "7) Install Helium browser (requires reboot)"
+    echo "8) Build niri-scratchpad"
+    echo "9) Setup Zsh with Prezto"
+    echo "10) Setup Flatpaks"
+    echo "11) Enable services"
+    echo "12) Create ujust commands"
+    echo "13) Back to main menu"
     echo ""
 }
 
 # Main
 main() {
     show_menu
-    read -p "Enter choice [1-8]: " choice
+    read -p "Enter choice [1-4]: " choice
     
     case $choice in
         1) run_full_setup ;;
-        2) layer_packages ;;
-        3) setup_configs ;;
-        4) install_homebrew && install_brew_packages ;;
-        5) install_helium ;;
-        6) setup_zsh ;;
-        7) setup_flatpaks ;;
-        8) exit 0 ;;
+        2) run_post_reboot_setup ;;
+        3) 
+            show_steps_menu
+            read -p "Enter step [0-13]: " step
+            case $step in
+                0) system_update ;;
+                1) layer_packages ;;
+                2) setup_vicinae ;;
+                3) setup_configs ;;
+                4) setup_wallpaper ;;
+                5) install_homebrew ;;
+                6) install_brew_packages ;;
+                7) install_helium ;;
+                8) install_niri_scratchpad ;;
+                9) setup_zsh ;;
+                10) setup_flatpaks ;;
+                11) setup_services ;;
+                12) setup_ujust ;;
+                13) main ;;
+                *) log_error "Invalid step" && exit 1 ;;
+            esac
+            ;;
+        4) exit 0 ;;
         *) log_error "Invalid choice" && exit 1 ;;
     esac
 }
