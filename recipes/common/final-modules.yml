@@ -1,5 +1,0 @@
-modules:
-  - type: script
-    snippets:
-      - rm -f /var/cache/dnf/* /var/cache/rpm-ostree/* || true
-      - ostree container commit

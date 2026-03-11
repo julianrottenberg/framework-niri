@@ -1,25 +1,10 @@
 # Custom ujust commands for Framework Niri image
 # Install location: /usr/share/ublue-os/just/
 
-# List all custom commands
-list-custom:
-    @echo "Custom commands available:"
-    @echo "  update-system          - Update system, flatpaks, and firmware"
-    @echo "  enable-flathub        - Enable unfiltered Flathub repository"
-    @echo "  install-vpn           - Install VPN client (Mullvad, ProtonVPN, Tailscale)"
-    @echo "  install-steam         - Install Steam flatpak"
-    @echo "  toggle-anticheat      - Toggle anti-cheat support (ptrace)"
-    @echo "  toggle-cups           - Toggle CUPS printing service"
-    @echo "  set-libvirt ACTION    - Enable/disable libvirt/KVM"
-    @echo "  install-dangerzone    - Install Dangerzone document sanitizer"
-    @echo "  set-bluetooth ACTION  - Toggle Bluetooth modules"
-    @echo "  toggle-xwayland       - Show XWayland status"
-    @echo "  set-container-userns  - Toggle container userns for rootless containers"
-    @echo "  install-vicinae-ext   - Install recommended Vicinae extensions"
-
 # Update the system with rpm-ostree, flatpak, and firmware
 update-system:
     #!/usr/bin/env bash
+    set -oue pipefail
     echo "Updating system..."
     rpm-ostree upgrade
     flatpak update -y
@@ -30,12 +15,14 @@ update-system:
 # Enable unfiltered Flathub repository
 enable-flathub:
     #!/usr/bin/env bash
+    set -oue pipefail
     flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
     echo "Unfiltered Flathub enabled!"
 
 # Install VPN client
 install-vpn:
     #!/usr/bin/env bash
+    set -oue pipefail
     echo "Select VPN provider:"
     echo "1) Mullvad VPN"
     echo "2) ProtonVPN"
@@ -51,14 +38,15 @@ install-vpn:
 # Install Steam with proper permissions
 install-steam:
     #!/usr/bin/env bash
+    set -oue pipefail
     flatpak install -y flathub com.valvesoftware.Steam
     flatpak override com.valvesoftware.Steam --filesystem=xdg-data/applications
     echo "Steam installed!"
-    echo "Note: You may need to run 'ujust toggle-anticheat' for some games."
 
 # Toggle anti-cheat support (requires ptrace)
 toggle-anticheat:
     #!/usr/bin/env bash
+    set -oue pipefail
     if [ -f /etc/sysctl.d/99-anticheat.conf ]; then
         sudo rm /etc/sysctl.d/99-anticheat.conf
         sudo sysctl --system
@@ -72,6 +60,7 @@ toggle-anticheat:
 # Toggle CUPS printing service
 toggle-cups:
     #!/usr/bin/env bash
+    set -oue pipefail
     if systemctl is-enabled --quiet cups 2>/dev/null; then
         sudo systemctl disable --now cups 2>/dev/null || true
         echo "CUPS disabled"
@@ -83,6 +72,7 @@ toggle-cups:
 # Set libvirt/KVM daemons on/off
 set-libvirt ACTION:
     #!/usr/bin/env bash
+    set -oue pipefail
     if [ "{{ACTION}}" = "on" ]; then
         sudo systemctl enable --now libvirtd 2>/dev/null || true
         sudo usermod -aG libvirt $USER 2>/dev/null || true
@@ -96,12 +86,15 @@ set-libvirt ACTION:
 
 # Install Dangerzone (sandboxed document sanitizer)
 install-dangerzone:
+    #!/usr/bin/env bash
+    set -oue pipefail
     flatpak install -y flathub org.freedomofpress.Dangerzone
     echo "Dangerzone installed!"
 
 # Toggle Bluetooth kernel modules
 set-bluetooth ACTION:
     #!/usr/bin/env bash
+    set -oue pipefail
     if [ "{{ACTION}}" = "on" ]; then
         echo "Bluetooth modules enabled by default"
         echo "Use 'blueman-manager' to manage devices"
@@ -112,22 +105,10 @@ set-bluetooth ACTION:
         echo "Usage: ujust set-bluetooth <on|off>"
     fi
 
-# Toggle XWayland (for X11 app support)
-toggle-xwayland:
-    #!/usr/bin/env bash
-    echo "XWayland status:"
-    if pgrep -x Xwayland > /dev/null 2>&1; then
-        echo "  XWayland is running"
-    else
-        echo "  XWayland is not running (may start on demand)"
-    fi
-    echo ""
-    echo "XWayland is enabled by default in this image."
-    echo "To disable XWayland, add 'xwayland-satellite off' to your niri config."
-
 # Set container userns (for Docker/Podman rootless)
 set-container-userns ACTION:
     #!/usr/bin/env bash
+    set -oue pipefail
     if [ "{{ACTION}}" = "on" ]; then
         echo "user.max_user_namespaces=28633" | sudo tee /etc/sysctl.d/99-container-userns.conf
         sudo sysctl --system
@@ -144,6 +125,7 @@ set-container-userns ACTION:
 # Install recommended Vicinae extensions
 install-vicinae-ext:
     #!/usr/bin/env bash
+    set -oue pipefail
     echo "Installing recommended Vicinae extensions..."
     
     extensions=(

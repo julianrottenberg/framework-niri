@@ -1,13 +1,111 @@
+---
+# yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
 name: framework-niri
 description: Custom Fedora Atomic with Niri WM optimized for Framework 13 AMD
 base-image: quay.io/fedora-ostree-desktops/base-atomic
 image-version: 43
 
 modules:
-  - from-file: common/base-modules.yml
-  - from-file: common/framework-modules.yml
-  - from-file: common/niri-modules.yml
-  - from-file: common/browser-modules.yml
-  - from-file: common/zsh-modules.yml
-  - from-file: common/ujust-modules.yml
-  - from-file: common/final-modules.yml
+  - type: files
+    files:
+      - source: system
+        destination: /
+
+  - type: dnf
+    repos:
+      copr:
+        - quadratech188/vicinae
+    install:
+      packages:
+        - niri
+        - waybar
+        - wlogout
+        - mako
+        - swaylock
+        - swayidle
+        - swaybg
+        - foot
+        - alacritty
+        - xdg-desktop-portal-wlr
+        - xdg-desktop-portal-gtk
+        - xwayland-satellite
+        - xorg-x11-server-Xwayland
+        - brightnessctl
+        - pamixer
+        - playerctl
+        - pavucontrol
+        - slurp
+        - grim
+        - wlr-randr
+        - kanshi
+        - blueman
+        - bluez
+        - bluez-tools
+        - polkit
+        - polkit-gnome-authentication-agent-1
+        - network-manager-applet
+        - NetworkManager-openvpn
+        - NetworkManager-openconnect
+        - fontawesome-fonts
+        - jetbrains-mono-fonts
+        - google-inter-fonts
+        - papirus-icon-theme
+        - breeze-icon-theme
+        - nemo
+        - nemo-fileroller
+        - nemo-image-converter
+        - nemo-preview
+        - nemo-seahorse
+        - nemo-terminal
+        - file-roller
+        - gvfs-mtp
+        - gvfs-gphoto2
+        - gvfs-smb
+        - gvfs-nfs
+        - gvfs-archive
+        - android-tools
+        - fastfetch
+        - btop
+        - eza
+        - zoxide
+        - fzf
+        - bat
+        - jq
+        - gh
+        - just
+        - distrobox
+        - podman
+        - buildah
+        - vim
+        - neovim
+        - git-lfs
+        - ripgrep
+        - fd-find
+        - wget
+        - curl
+        - unzip
+        - p7zip
+        - easyeffects
+        - imv
+        - vlc
+        - chromium
+        - zsh
+        - zsh-autosuggestions
+        - zsh-syntax-highlighting
+        - vicinae
+
+  - type: script
+    scripts:
+      - install-clipcat.sh
+      - install-niri-scratchpad.sh
+      - install-helium.sh
+      - install-prezto.sh
+
+  - type: default-flatpaks
+    configurations:
+      - scope: system
+        install:
+          - com.github.tchx84.Flatseal
+          - app.zen_browser.zen
+
+  - type: signing

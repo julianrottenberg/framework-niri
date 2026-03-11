@@ -1,21 +1,19 @@
-name: Build Custom Image
+name: bluebuild
 on:
   schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+    - cron:
+        "00 06 * * *" # build at 06:00 UTC every day
   push:
-    branches:
-      - main
     paths-ignore:
-      - '**.md'
-      - 'docs/**'
+      - "**.md"
   pull_request:
-    branches:
-      - main
   workflow_dispatch:
-
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
 jobs:
-  build:
-    name: Build Image
+  bluebuild:
+    name: Build Custom Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,15 +25,8 @@ jobs:
         recipe:
           - recipe.yml
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Get Date
-        id: date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-
-      - name: Build Image
-        uses: blue-build/github-action@v1.11.1
+      - name: Build Custom Image
+        uses: blue-build/github-action@v1.11
         with:
           recipe: ${{ matrix.recipe }}
           cosign_private_key: ${{ secrets.SIGNING_SECRET }}

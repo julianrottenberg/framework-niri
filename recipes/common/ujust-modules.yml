@@ -1,5 +1,0 @@
-modules:
-  - type: files
-    files:
-      - source: justfiles
-        destination: /usr/share/ublue-os/just/
