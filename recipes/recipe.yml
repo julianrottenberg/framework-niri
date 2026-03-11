@@ -90,13 +90,10 @@ modules:
         - zsh-autosuggestions
         - zsh-syntax-highlighting
         - vicinae
+        - homebrew
 
-  - type: script
-    scripts:
-      - install-clipcat.sh
-      - install-niri-scratchpad.sh
-      - install-helium.sh
-      - install-prezto.sh
+  - type: brew
+    nofile-limits: true
 
   - type: default-flatpaks
     configurations:
