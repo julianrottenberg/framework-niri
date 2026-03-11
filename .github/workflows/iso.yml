@@ -1,0 +1,56 @@
+name: Generate ISO
+on:
+  workflow_dispatch: # Manual trigger only
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/iso.yml'
+      - 'recipes/recipe.yml'
+
+jobs:
+  generate-iso:
+    name: Generate ISO
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install BlueBuild CLI
+        run: |
+          podman run --rm ghcr.io/blue-build/cli:latest-installer | bash
+
+      - name: Generate ISO
+        run: |
+          bluebuild generate-iso \
+            --iso-name framework-niri.iso \
+            image ghcr.io/julianrottenberg/framework-niri:latest
+
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: framework-niri-iso
+          path: framework-niri.iso
+          retention-days: 30
+
+      - name: Create Release
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: framework-niri.iso
+          tag_name: iso-${{ github.run_number }}
+          name: Framework Niri ISO ${{ github.run_number }}
+          body: |
+            Bootable ISO for Framework Niri
+            
+            Flash this ISO to a USB drive using Fedora Media Writer or balenaEtcher.
+            
+            Installation:
+            1. Boot from USB
+            2. Follow the installer instructions
+            3. Rebase to ghcr.io/julianrottenberg/framework-niri:latest after installation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
